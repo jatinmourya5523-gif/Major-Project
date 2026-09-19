@@ -23,6 +23,7 @@ const userRouter = require("./routes/user.js");
 
 
 const dbUrl = process.env.ATLASDB_URL;
+const mapToken = process.env.MAP_TOKEN;
 
 main()
   .then(() => {
@@ -84,9 +85,9 @@ app.use((req, res, next) => {
   res.locals.success = req.flash("success");
   res.locals.error = req.flash("error");
   res.locals.currUser = req.user;
+  res.locals.mapToken = mapToken;
   next();
 });
-
 app.get("/demouser", async(req, res) => {
   let fakeUser = new User({
     email: "student!gmail.com",
