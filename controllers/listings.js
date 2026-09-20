@@ -34,29 +34,42 @@ module.exports.showListing = async (req, res) => {
 };
 
 module.exports.createListing = async (req, res) => {
-  let response = await geocodingClient
-  .forwardGeocode({
-  query: `${req.body.listing.location}, ${req.body.listing.country}`,
-  limit: 1,
-})
-.send();
+    const { location, country } = req.body.listing;
 
- 
-  let url = req.file.path;
-  let filename = req.file.filename;
+    const response = await geocodingClient
+        .forwardGeocode({
+            query: `${location}, ${country}`,
+            limit: 1
+        })
+        .send();
 
-  const newListing = new Listing(req.body.listing);
+    if (!response.body.features.length) {
+        req.flash("error", "Location not found. Please enter a valid location.");
+        return res.redirect("/listings/new");
+    }
 
-  newListing.owner = req.user._id;
-  newListing.image = { url, filename };
+    const feature = response.body.features[0];
 
-  
-  newListing.geometry = response.body.features[0].geometry;
-  
-  let savedListing = await newListing.save();
-  console.log(savedListing);
-  req.flash("success", "New Listing Created!");
-  res.redirect("/listings");
+    const newListing = new Listing(req.body.listing);
+
+    newListing.owner = req.user._id;
+
+    newListing.image = {
+        url: req.file.path,
+        filename: req.file.filename
+    };
+
+    newListing.geometry = feature.geometry;
+
+    await newListing.save();
+
+    console.log("Entered Location:", location);
+    console.log("Entered Country:", country);
+    console.log("Mapbox Result:", feature.place_name);
+    console.log("Coordinates:", feature.geometry.coordinates);
+
+    req.flash("success", "New Listing Created!");
+    res.redirect("/listings");
 };
 
 module.exports.renderEditForm = async (req, res) => {
